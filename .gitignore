@@ -1,0 +1,6 @@
+.coverage
+.travis_*
+*node_modules*
+
+*coverage*
+*.nyc_output*
