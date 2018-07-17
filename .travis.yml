@@ -2,7 +2,7 @@ sudo: required
 
 env:
   global:
-    - CC_TEST_REPORTER_ID=6444ce234e6ec1703cda414367cc0ef773c9645e0248ec579e4201d366575aaf
+    - CC_TEST_REPORTER_ID=01ca84d88280ef32773ae13a7c40f6fa1f229bfe23c50cc381ea66810a7bbaa9
 
 language: node_js
 
