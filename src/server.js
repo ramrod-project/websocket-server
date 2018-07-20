@@ -87,7 +87,7 @@ wss.on("connection", function (ws) {
         case "status":
             if (connection.open) {
                 ws.send("Waiting for changes in job statuses...");
-                rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Ready"))
+                rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Waiting"))
                     .changes({includeInitial: true,
                               squash: false})
                     .run(connection, function (err, cursor) {
