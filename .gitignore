@@ -4,3 +4,17 @@
 
 *coverage*
 *.nyc_output*
+
+# Pycharm generated files #
+###########################
+../*.idea
+../*.idea/
+.idea/*
+.idea/
+.idea
+*.idea/
+*/.idea
+*.idea
+/*.idea
+**/.idea
+.vscode*
