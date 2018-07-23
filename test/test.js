@@ -30,7 +30,7 @@ describe("", function () {
             "Tooltip": "for testing jobs",
             "Inputs":[]
         },
-        "Status": "Ready",
+        "Status": "Waiting",
         "StartTime" : 0
     };
 
@@ -47,7 +47,7 @@ describe("", function () {
                 "Tooltip": "for testing jobs",
                 "Inputs":[]
             },
-            "Status": "Ready",
+            "Status": "Waiting",
             "StartTime" : 0
         },
         "Content": "Test output content"
