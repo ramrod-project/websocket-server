@@ -1,0 +1,20 @@
+.coverage
+.travis_*
+*node_modules*
+
+*coverage*
+*.nyc_output*
+
+# Pycharm generated files #
+###########################
+../*.idea
+../*.idea/
+.idea/*
+.idea/
+.idea
+*.idea/
+*/.idea
+*.idea
+/*.idea
+**/.idea
+.vscode*

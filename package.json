@@ -1,0 +1,34 @@
+{
+  "name": "pcp_websocket_server",
+  "version": "0.1.0",
+  "description": "Websocket server for PCP frontend/rethinkdb connection.",
+  "main": "server.js",
+  "scripts": {
+    "test": "STAGE=TESTING nyc --reporter=lcov mocha --exit test/test.js",
+    "test-terminal": "STAGE=TESTING nyc --reporter=text-summary mocha --exit test/test.js",
+    "start": "PORT=3000 node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "manziman",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-http": "^4.0.0",
+    "eslint": "^4.19.1",
+    "mocha": "^5.0.5",
+    "websocket": "^1.0.25"
+  },
+  "dependencies": {
+    "express": "^4.16.3",
+    "istanbul": "^0.4.5",
+    "npmlog": "^4.1.2",
+    "nyc": "^12.0.2",
+    "package.json": "^2.0.1",
+    "redis": "^2.8.0",
+    "rethinkdb": "^2.3.3",
+    "ws": "^5.1.0"
+  }
+}

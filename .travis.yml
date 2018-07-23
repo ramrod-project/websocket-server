@@ -1,0 +1,58 @@
+sudo: required
+
+env:
+  global:
+    - CC_TEST_REPORTER_ID=01ca84d88280ef32773ae13a7c40f6fa1f229bfe23c50cc381ea66810a7bbaa9
+
+language: node_js
+
+node_js:
+  - "8.9.3"
+
+services:
+  - docker
+
+branches:
+  only:
+  - master
+  - dev
+  - qa
+
+before_install:
+  - if [ "$TRAVIS_BRANCH" == "master"  ]; 
+    then export TAG=latest; 
+    else export TAG=$TRAVIS_BRANCH; fi
+
+install:
+  - docker build -t ramrodpcp/websocket-server:$TAG .
+  - npm i -g npm@6.1.0
+  - npm i
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+
+before_script:
+  - pwd
+  - docker network create test
+  - docker run -d --rm --name rethinkdb -p 28015:28015 -e "STAGE=DEV" -e "LOGLEVEL=DEBUG"
+    --network test ramrodpcp/database-brain:$TAG
+  - sleep 3
+  - npm test
+  - ./cc-test-reporter after-build -t lcov --exit-code 0
+
+script:
+  - docker run -d --name websocket -p 3000:3000 -e "STAGE=QA" -e "LOGLEVEL=DEBUG"
+    --name websocket --network test ramrodpcp/websocket-server:$TAG;
+  - sleep 5
+  - docker logs websocket
+  - docker stop websocket
+  - docker stop rethinkdb
+
+after_success:
+  - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];
+    then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; fi
+  - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];
+    then docker push ramrodpcp/websocket-server:$TAG; fi
+
+notifications:
+  slack: ramrod-project:GDF82rRYDg3KSekrT3GA24qO
