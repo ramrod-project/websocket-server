@@ -209,7 +209,7 @@ describe("", function () {
                     done();
                 });
             }
-            rdb.db("Brain").table("Files").insert(Test_file)
+            rdb.db("Brain").table("Files").insert({"Name":"test"})
             .run(rdbconn, function (err, result) {
                 if (err) throw err;
             });
