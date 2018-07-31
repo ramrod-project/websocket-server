@@ -212,7 +212,7 @@ describe("", function () {
         });
         testws_files.connect("ws://localhost:3000/monitor");
 
-    it("should confirm Rethinkdb output feed connection", function (done) {
+    it("should confirm files feed connection", function (done) {
         if (files_connection.connected) {
             files_connection.once("message", function (message) {
                 expect(typeof(message.utf8Data)).to.equal("string");
