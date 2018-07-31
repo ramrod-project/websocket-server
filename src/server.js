@@ -141,6 +141,26 @@ wss.on("connection", function (ws) {
                 // reconnect();
             }
             break;
+        case "files":
+            if (connection.open) {
+                ws.send("Waiting for changes in files ... ");
+                rdb.db("Brain").table("Files")
+                    .changes({squash: false})
+                    .run(connection, function (err, cursor) {
+                        if (err) throw err;
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            //console.warn(row);
+                            if (ws.readyState == 1) {
+                                    var sendData = {"changed":1};
+                                    ws.send(JSON.stringify(sendData, null, 2));
+                            } else {
+                                return null;
+                            }
+                        });
+                    });
+            }
+            break;
         default:
             ws.send(message + " not a valid feed!");
         }

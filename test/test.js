@@ -11,6 +11,7 @@ var app = require("../src/server.js");
 
 var status_connection = null;
 var output_connection = null;
+var files_connection = null;
 var rdbconn = null;
 var testws = null;
 
@@ -56,6 +57,7 @@ describe("", function () {
     before(function (done) {
         testws = new wsclient();
         testws2 = new wsclient();
+        testws_files = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -69,6 +71,7 @@ describe("", function () {
     after(function(done) {
         status_connection.close();
         output_connection.close();
+        files_connection.close();
         rdb.db("Brain").table("Jobs").delete().run(rdbconn, function (err, result) {
             if (err) done(err);
             rdb.db("Brain").table("Outputs").delete().run(rdbconn, function (err, result) {
@@ -194,4 +197,23 @@ describe("", function () {
             if (err) throw err;
         });
     });
-})
+
+    it("should push a file notification to client", function (done) {
+        testws_files.on("connect", function (conn) {
+            if (conn.connected) {
+                output_connection = conn;
+                output_connection.once("message", function (message) {
+                    expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
+                    data = JSON.parse(message.utf8Data);
+                    expect(data.changed).to.equal(1);
+                    done();
+                });
+            }
+            rdb.db("Brain").table("Files").insert(Test_file)
+            .run(rdbconn, function (err, result) {
+                if (err) throw err;
+            });
+        });
+        testws_files.connect("ws://localhost:3000/monitor");
+    });
+});
