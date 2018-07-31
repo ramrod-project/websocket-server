@@ -198,22 +198,33 @@ describe("", function () {
         });
     });
 
-    it("should push a file notification to client", function (done) {
+
+    it("should confirm Websockets connection", function (done) {
         testws_files.on("connect", function (conn) {
-            if (conn.connected) {
+            if (files_connection.connected) {
                 output_connection = conn;
-                output_connection.once("message", function (message) {
-                    expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
-                    data = JSON.parse(message.utf8Data);
-                    expect(data.changed).to.equal(1);
+                files_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
                     done();
                 });
             }
-            rdb.db("Brain").table("Files").insert({"Name":"test"})
-            .run(rdbconn, function (err, result) {
-                if (err) throw err;
-            });
         });
         testws_files.connect("ws://localhost:3000/monitor");
+
+    it("should push a file notification to client", function (done) {
+        if (files_connection.connected) {
+            files_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
+                data = JSON.parse(message.utf8Data);
+                expect(data.changed).to.equal(1);
+                done();
+            });
+        }
+        rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
     });
-});
+})});
+
