@@ -11,6 +11,7 @@ var app = require("../src/server.js");
 
 var status_connection = null;
 var output_connection = null;
+var files_connection = null;
 var rdbconn = null;
 var testws = null;
 
@@ -56,6 +57,7 @@ describe("", function () {
     before(function (done) {
         testws = new wsclient();
         testws2 = new wsclient();
+        testws_files = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -69,6 +71,7 @@ describe("", function () {
     after(function(done) {
         status_connection.close();
         output_connection.close();
+        files_connection.close();
         rdb.db("Brain").table("Jobs").delete().run(rdbconn, function (err, result) {
             if (err) done(err);
             rdb.db("Brain").table("Outputs").delete().run(rdbconn, function (err, result) {
@@ -194,4 +197,44 @@ describe("", function () {
             if (err) throw err;
         });
     });
-})
+
+
+    it("should confirm Websockets connection", function (done) {
+        testws_files.on("connect", function (conn3) {
+            if (conn3.connected) {
+                files_connection = conn3;
+                files_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
+                    done();
+                });
+            }
+        });
+        testws_files.connect("ws://localhost:3000/monitor");
+
+    it("should confirm files feed connection", function (done) {
+        if (files_connection.connected) {
+            files_connection.once("message", function (message) {
+                expect(typeof(message.utf8Data)).to.equal("string");
+                done();
+            });
+            files_connection.send("files");
+        }
+    });
+
+    it("should push a file notification to client", function (done) {
+        if (files_connection.connected) {
+            files_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
+                data = JSON.parse(message.utf8Data);
+                expect(data.changed).to.equal(1);
+                done();
+            });
+        }
+        rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
+    });
+})});
+
