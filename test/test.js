@@ -66,7 +66,6 @@ describe("", function () {
             rdbconn = conn;
             rdb.db("Brain").tableList().run(rdbconn, function (err, result) {
                 if (err) throw err;
-                done();
             });
         });
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
