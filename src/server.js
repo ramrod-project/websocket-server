@@ -161,6 +161,26 @@ wss.on("connection", function (ws) {
                     });
             }
             break;
+            case "plugins":
+            if (connection.open) {
+                ws.send("Waiting for changes in Plugins ... ");
+                rdb.db("Controller").table("Plugins")
+                    .changes({squash: false})
+                    .run(connection, function (err, cursor) {
+                        if (err) throw err;
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            //console.warn(row);
+                            if (ws.readyState == 1) {
+                                    var sendData = {"changed":1};
+                                    ws.send(JSON.stringify(sendData, null, 2));
+                            } else {
+                                return null;
+                            }
+                        });
+                    });
+            }
+            break;
         default:
             ws.send(message + " not a valid feed!");
         }
