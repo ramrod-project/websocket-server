@@ -59,6 +59,7 @@ describe("", function () {
         testws = new wsclient();
         testws2 = new wsclient();
         testws_files = new wsclient();
+        testws_plugins = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -200,7 +201,47 @@ describe("", function () {
         });
     });
 
+    // START Plugins Monitor
+    it("should confirm Websockets connection", function (done) {
+        testws_plugins.on("connect", function (conn4) {
+            if (conn3.connected) {
+                plugs_connection = conn4;
+                plugs_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
+                    done();
+                });
+            }
+        });
+        testws_plugins.connect("ws://localhost:3000/monitor");
+    });
 
+    it("should confirm plugins feed connection", function (done) {
+        if (plugs_connection.connected) {
+            plugs_connection.once("message", function (message) {
+                expect(typeof(message.utf8Data)).to.equal("string");
+                done();
+            });
+            plugs_connection.send("plugins");
+        }
+    });
+
+    it("should push a plugins notification to client", function (done) {
+        if (files_connection.connected) {
+            files_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
+                data = JSON.parse(message.utf8Data);
+                expect(data.changed).to.equal(1);
+                done();
+            });
+        }
+        rdb.db("Controller").table("Plugins").insert({"Name": "t3st"})
+            .run(rdbconn, function (err, result) {
+                if (err) throw err;
+            });
+    });
+    // END Plugins Monitor
+    // START FILES TEST
     it("should confirm Websockets connection", function (done) {
         testws_files.on("connect", function (conn3) {
             if (conn3.connected) {
@@ -239,45 +280,6 @@ describe("", function () {
         });
     });
     // END FILE MONITOR
-    // START Plugins Monitor
-    it("should confirm Websockets connection", function (done) {
-        testws_files.on("connect", function (conn4) {
-            if (conn3.connected) {
-                plugs_connection = conn4;
-                plugs_connection.once("message", function (message) {
-                    expect(typeof(message.utf8Data)).to.equal("string");
-                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
-                    done();
-                });
-            }
-        });
-        testws_files.connect("ws://localhost:3000/monitor");
-    });
 
-    it("should confirm plugins feed connection", function (done) {
-        if (plugs_connection.connected) {
-            plugs_connection.once("message", function (message) {
-                expect(typeof(message.utf8Data)).to.equal("string");
-                done();
-            });
-            plugs_connection.send("plugins");
-        }
-    });
-
-    it("should push a plugins notification to client", function (done) {
-        if (files_connection.connected) {
-            files_connection.once("message", function (message) {
-                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
-                data = JSON.parse(message.utf8Data);
-                expect(data.changed).to.equal(1);
-                done();
-            });
-        }
-        rdb.db("Controller").table("Plugins").insert({"Name": "t3st"})
-            .run(rdbconn, function (err, result) {
-                if (err) throw err;
-            });
-    });
-    // END Plugins Monitor
 });
 
