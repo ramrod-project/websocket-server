@@ -227,8 +227,8 @@ describe("", function () {
     });
 
     it("should push a plugins notification to client", function (done) {
-        if (files_connection.connected) {
-            files_connection.once("message", function (message) {
+        if (plugs_connection.connected) {
+            plugs_connection.once("message", function (message) {
                 expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
                 data = JSON.parse(message.utf8Data);
                 expect(data.changed).to.equal(1);
