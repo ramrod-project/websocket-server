@@ -204,7 +204,7 @@ describe("", function () {
     // START Plugins Monitor
     it("should confirm Websockets connection", function (done) {
         testws_plugins.on("connect", function (conn4) {
-            if (conn3.connected) {
+            if (conn4.connected) {
                 plugs_connection = conn4;
                 plugs_connection.once("message", function (message) {
                     expect(typeof(message.utf8Data)).to.equal("string");
