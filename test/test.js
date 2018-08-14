@@ -289,11 +289,11 @@ describe("", function () {
                 expect(data.changed).to.equal(1);
                 done();
             });
+            rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+                .run(rdbconn_files, function (err, result) {
+                    if (err) throw err;
+                });
         }
-        rdb.db("Brain").table("Files").insert({"Name":"t3st"})
-        .run(rdbconn_files, function (err, result) {
-            if (err) throw err;
-        });
     });
     // END FILE MONITOR
 
