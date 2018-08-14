@@ -289,8 +289,10 @@ describe("", function () {
             });
         }
         this.timeout(10000);
-        rdb.db("Brain").table("Files").insert({"Name":"test6"})
+        rdb.db("Brain").table("Files").insert({"Name":"test7"})
         .run(rdbconn_files, function (err, result) {
+            console.log(err);
+            console.log(result);
             if (err) throw err;
         });
     });
