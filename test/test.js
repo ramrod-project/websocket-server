@@ -15,6 +15,7 @@ var files_connection = null;
 var plugs_connection = null;
 var rdbconn = null;
 var rdbconn_files = null;
+var rdbconn_plugins = null;
 var testws = null;
 
 describe("", function () {
@@ -64,6 +65,13 @@ describe("", function () {
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
+            rdb.db("Brain").tableList().run(rdbconn, function (err, result) {
+                if (err) throw err;
+            });
+        });
+        rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
+            if (err) throw err;
+            rdbconn_plugins = conn;
             rdb.db("Brain").tableList().run(rdbconn, function (err, result) {
                 if (err) throw err;
             });
@@ -244,7 +252,7 @@ describe("", function () {
             });
         }
         rdb.db("Controller").table("Plugins").insert({"Name": "t3st"})
-            .run(rdbconn, function (err, result) {
+            .run(rdbconn_plugins, function (err, result) {
                 if (err) throw err;
             });
     });
