@@ -288,7 +288,7 @@ describe("", function () {
                 done();
             });
         }
-        rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+        rdb.db("Brain").table("Files").insert({"Name":"test6"})
         .run(rdbconn_files, function (err, result) {
             if (err) throw err;
         });
