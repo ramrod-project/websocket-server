@@ -245,7 +245,6 @@ describe("", function () {
     it("should push a plugins notification to client", function (done) {
         if (plugs_connection.connected) {
             plugs_connection.once("message", function (message) {
-                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
                 data = JSON.parse(message.utf8Data);
                 expect(data.changed).to.equal(1);
                 done();
@@ -284,16 +283,15 @@ describe("", function () {
     it("should push a file notification to client", function (done) {
         if (files_connection.connected) {
             files_connection.once("message", function (message) {
-                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
                 data = JSON.parse(message.utf8Data);
                 expect(data.changed).to.equal(1);
                 done();
             });
-            rdb.db("Brain").table("Files").insert({"Name":"t3st"})
-                .run(rdbconn_files, function (err, result) {
-                    if (err) throw err;
-                });
         }
+        rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+        .run(rdbconn_files, function (err, result) {
+            if (err) throw err;
+        });
     });
     // END FILE MONITOR
 
