@@ -295,6 +295,7 @@ describe("", function () {
             console.log(result);
             if (err) throw err;
         });
+        this.timeout(9000);
     });
     // END FILE MONITOR
 
