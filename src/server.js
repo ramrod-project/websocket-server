@@ -43,11 +43,20 @@ function reconnect() {
 reconnect()
 .then(conn => connection = conn);*/
 var connection = null;
+var connection_files = null;
+var connection_plugin = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection = conn;
 });
-
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_files = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_plugin = conn;
+});
 // Create websocket server using http server
 var wss = new WebSocket.Server({ server: server, path: "/monitor" });
 
@@ -146,7 +155,7 @@ wss.on("connection", function (ws) {
                 ws.send("Waiting for changes in files ... ");
                 rdb.db("Brain").table("Files")
                     .changes({squash: false})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_files, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
@@ -166,7 +175,7 @@ wss.on("connection", function (ws) {
                 ws.send("Waiting for changes in Plugins ... ");
                 rdb.db("Controller").table("Plugins")
                     .changes({squash: false})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_plugin, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;

@@ -20,7 +20,7 @@ var testws = null;
 
 describe("", function () {
 
-    this.timeout(3000);
+    this.timeout(8000);
 
     const newJob = {
         "id": "t3stid",
