@@ -21,14 +21,16 @@ var server = http.createServer(app);
 // Check environment
 var rethinkHost = "";
 var rethinkPort = 28015;
-if (process.env.STAGE === "TESTING") {
-    rethinkHost = "localhost";
-} else {
-    rethinkHost = "rethinkdb";
-}
+rethinkHost = "localhost";
+
+// if (process.env.STAGE === "TESTING") {
+//     rethinkHost = "localhost";
+// } else {
+//     rethinkHost = "rethinkdb";
+// }
 
 // Create connection to Rethinkdb
-/*var connection = null;
+var connection = null;
 function reconnect() {
     return new Promise((resolve, reject) => {
         setTimeout(() => rdb.connect( 
@@ -41,7 +43,7 @@ function reconnect() {
     });
 }
 reconnect()
-.then(conn => connection = conn);*/
+.then(conn => connection = conn);
 var connection = null;
 var connection_files = null;
 var connection_plugin = null;
@@ -188,6 +190,16 @@ wss.on("connection", function (ws) {
                             }
                         });
                     });
+            }
+            break;
+            case "__ping__":
+            if (connection.open) {
+                if (message === '__ping__') {
+                    // console.log("message is ping");
+                    ws.send('__pong__');
+                } else {
+                    console.log("message is NOT ping");
+                }
             }
             break;
         default:
