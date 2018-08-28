@@ -13,6 +13,7 @@ var status_connection = null;
 var output_connection = null;
 var files_connection = null;
 var plugs_connection = null;
+var ping_pong_connection = null;
 var rdbconn = null;
 var testws = null;
 
@@ -60,6 +61,7 @@ describe("", function () {
         testws2 = new wsclient();
         testws_files = new wsclient();
         testws_plugins = new wsclient();
+        testws_ping_pong = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -74,6 +76,8 @@ describe("", function () {
         status_connection.close();
         output_connection.close();
         files_connection.close();
+        plugs_connection.close();
+        ping_pong_connection.close();
         rdb.db("Brain").table("Jobs").delete().run(rdbconn, function (err, result) {
             if (err) done(err);
             rdb.db("Brain").table("Outputs").delete().run(rdbconn, function (err, result) {
@@ -277,6 +281,43 @@ describe("", function () {
         .run(rdbconn, function (err, result) {
             if (err) throw err;
         });
+    });
+    });
+
+    // PING-PONG START
+    it("should confirm Websockets connection", function (done) {
+        testws_ping_pong.on("connect", function (conn5) {
+            if (conn5.connected) {
+                ping_pong_connection = conn5;
+                ping_pong_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
+                    done();
+                });
+            }
+        });
+        testws_ping_pong.connect("ws://localhost:3000/monitor");
+
+    it("should confirm ping-pong feed connection", function (done) {
+        if (ping_pong_connection.connected) {
+            ping_pong_connection.once("message", function (message) {
+                expect(typeof(message.data)).to.equal("string");
+                expect(message === 'cheerio');
+                done();
+            });
+            ping_pong_connection.send("__pong__");
+        }
+    });
+
+    it("should push a ping-pong notification to client", function (done) {
+        if (ping_pong_connection.connected) {
+            ping_pong_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.data))).to.equal("string");
+                data = JSON.parse(message.message);
+                expect(data).to.equal("__pong__");
+                done();
+            });
+        }
     });
     });
 
