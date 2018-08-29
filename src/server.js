@@ -190,6 +190,16 @@ wss.on("connection", function (ws) {
                     });
             }
             break;
+            case "__ping__":
+            if (connection.open) {
+                if (message === '__ping__') {
+                    // console.log("message is ping");
+                    ws.send('__pong__');
+                } else {
+                    console.log("message is NOT ping");
+                }
+            }
+            break;
         default:
             ws.send(message + " not a valid feed!");
         }
