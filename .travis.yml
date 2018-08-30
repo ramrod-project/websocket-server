@@ -24,7 +24,7 @@ before_install:
     else export TAG=$TRAVIS_BRANCH; fi
 
 install:
-  - docker build -t ramrodpcp/websocket-server:$TAG .
+  - docker build -t ramrodpcp/websocket-server:test .
   - npm i -g npm@6.1.0
   - npm i
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -42,13 +42,16 @@ before_script:
 
 script:
   - docker run -d --name websocket -p 3000:3000 -e "STAGE=QA" -e "LOGLEVEL=DEBUG"
-    --name websocket --network test ramrodpcp/websocket-server:$TAG;
+    --name websocket --network test ramrodpcp/websocket-server:test;
   - sleep 5
   - docker logs websocket
   - docker stop websocket
   - docker stop rethinkdb
+  # e2e tests
+  - bash <(curl -s https://raw.githubusercontent.com/ramrod-project/integration-stack/$TRAVIS_BRANCH/scripts/e2e.sh)
 
 after_success:
+  - docker tag ramrodpcp/websocket-server:test ramrodpcp/websocket-server:$TAG
   - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];
     then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; fi
   - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];
