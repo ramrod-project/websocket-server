@@ -43,11 +43,20 @@ function reconnect() {
 reconnect()
 .then(conn => connection = conn);*/
 var connection = null;
+var connection_files = null;
+var connection_plugin = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection = conn;
 });
-
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_files = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_plugin = conn;
+});
 // Create websocket server using http server
 var wss = new WebSocket.Server({ server: server, path: "/monitor" });
 
@@ -139,6 +148,56 @@ wss.on("connection", function (ws) {
             } else {
                 console.log("Connection closed! Reconnecting...");
                 // reconnect();
+            }
+            break;
+        case "files":
+            if (connection.open) {
+                ws.send("Waiting for changes in files ... ");
+                rdb.db("Brain").table("Files")
+                    .changes({squash: false})
+                    .run(connection_files, function (err, cursor) {
+                        if (err) throw err;
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            //console.warn(row);
+                            if (ws.readyState == 1) {
+                                    var sendData = {"changed":1};
+                                    ws.send(JSON.stringify(sendData, null, 2));
+                            } else {
+                                return null;
+                            }
+                        });
+                    });
+            }
+            break;
+            case "plugins":
+            if (connection.open) {
+                ws.send("Waiting for changes in Plugins ... ");
+                rdb.db("Controller").table("Plugins")
+                    .changes({squash: false})
+                    .run(connection_plugin, function (err, cursor) {
+                        if (err) throw err;
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            //console.warn(row);
+                            if (ws.readyState == 1) {
+                                    var sendData = {"changed":1};
+                                    ws.send(JSON.stringify(sendData, null, 2));
+                            } else {
+                                return null;
+                            }
+                        });
+                    });
+            }
+            break;
+            case "__ping__":
+            if (connection.open) {
+                if (message === '__ping__') {
+                    // console.log("message is ping");
+                    ws.send('__pong__');
+                } else {
+                    console.log("message is NOT ping");
+                }
             }
             break;
         default:
