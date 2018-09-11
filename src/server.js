@@ -173,8 +173,6 @@ wss.on("connection", function (ws) {
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData));
-                            } else {
-                                return null;
                             }
                         });
                     });
@@ -193,8 +191,6 @@ wss.on("connection", function (ws) {
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData, null, 2));
-                            } else {
-                                return null;
                             }
                         });
                     });
@@ -204,7 +200,7 @@ wss.on("connection", function (ws) {
             if (connection_telem.open) {
                 ws.send("Waiting for changes in telemetry ... ");
                 rdb.db("Brain").table("Targets")
-                    .changes({squash: false})
+                    .changes({squash: false, includeStates: true})
                     .run(connection_telem, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
@@ -214,8 +210,6 @@ wss.on("connection", function (ws) {
                                  ("new_val" in row && row.new_val !== null) &&
                                  (ws.readyState == 1) ){
                                     ws.send(JSON.stringify(row.new_val));
-                            } else {
-                                return null;
                             }
                         });
                     });
