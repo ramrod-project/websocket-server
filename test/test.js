@@ -336,7 +336,6 @@ describe("", function () {
             }
         });
         testws_telemetry.connect("ws://localhost:3000/monitor");
-    });
     it("should confirm telemetry feed connection", function (done) {
         if (telemetry_connection.connected) {
             telemetry_connection.once("message", function (message) {
@@ -348,7 +347,7 @@ describe("", function () {
         }
     });
 
-    it("should push a ping-pong notification to client", function (done) {
+    it("should push the new telemetry to the client", function (done) {
         if (telemetry_connection.connected) {
             telemetry_connection.once("message", function (message) {
                 expect(typeof(JSON.parse(message.data))).to.equal("string");
@@ -363,6 +362,8 @@ describe("", function () {
                 });
         }
     });
+    });
+
     // TELEMETRY END
 });
 
