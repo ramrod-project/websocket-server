@@ -170,7 +170,7 @@ wss.on("connection", function (ws) {
                     });
             }
             break;
-            case "plugins":
+        case "plugins":
             if (connection.open) {
                 ws.send("Waiting for changes in Plugins ... ");
                 rdb.db("Controller").table("Plugins")
@@ -190,7 +190,28 @@ wss.on("connection", function (ws) {
                     });
             }
             break;
-            case "__ping__":
+        case "telemetry":
+            if (connection.open) {
+                ws.send("Waiting for changes in telemetry ... ");
+                rdb.db("Brain").table("Targets")
+                    .changes({squash: false})
+                    .run(connection_files, function (err, cursor) {
+                        if (err) throw err;
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            //console.warn(row);
+                            if ( ("old_val" in row ) &&
+                                 ("new_val" in row && row.new_val !== null) &&
+                                 (ws.readyState == 1) ){
+                                    ws.send(JSON.stringify(row.new_val, null, 2));
+                            } else {
+                                return null;
+                            }
+                        });
+                    });
+            }
+            break;
+        case "__ping__":
             if (connection.open) {
                 if (message === '__ping__') {
                     // console.log("message is ping");

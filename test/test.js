@@ -13,6 +13,7 @@ var status_connection = null;
 var output_connection = null;
 var files_connection = null;
 var plugs_connection = null;
+var telemetry_connection = null;
 var ping_pong_connection = null;
 var rdbconn = null;
 var testws = null;
@@ -62,6 +63,7 @@ describe("", function () {
         testws_files = new wsclient();
         testws_plugins = new wsclient();
         testws_ping_pong = new wsclient();
+        testws_telemetry = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -78,6 +80,7 @@ describe("", function () {
         files_connection.close();
         plugs_connection.close();
         ping_pong_connection.close();
+        telemetry_connection.close();
         rdb.db("Brain").table("Jobs").delete().run(rdbconn, function (err, result) {
             if (err) done(err);
             rdb.db("Brain").table("Outputs").delete().run(rdbconn, function (err, result) {
@@ -298,28 +301,69 @@ describe("", function () {
         });
         testws_ping_pong.connect("ws://localhost:3000/monitor");
 
-    it("should confirm ping-pong feed connection", function (done) {
-        if (ping_pong_connection.connected) {
-            ping_pong_connection.once("message", function (message) {
-                expect(typeof(message.data)).to.equal("string");
-                expect(message === 'cheerio');
-                done();
-            });
-            ping_pong_connection.send("__pong__");
-        }
-    });
+        it("should confirm ping-pong feed connection", function (done) {
+            if (ping_pong_connection.connected) {
+                ping_pong_connection.once("message", function (message) {
+                    expect(typeof(message.data)).to.equal("string");
+                    expect(message === 'cheerio');
+                    done();
+                });
+                ping_pong_connection.send("__pong__");
+            }
+        });
 
-    it("should push a ping-pong notification to client", function (done) {
-        if (ping_pong_connection.connected) {
-            ping_pong_connection.once("message", function (message) {
-                expect(typeof(JSON.parse(message.data))).to.equal("string");
-                data = JSON.parse(message.message);
-                expect(data).to.equal("__pong__");
-                done();
-            });
-        }
+        it("should push a ping-pong notification to client", function (done) {
+            if (ping_pong_connection.connected) {
+                ping_pong_connection.once("message", function (message) {
+                    expect(typeof(JSON.parse(message.data))).to.equal("string");
+                    data = JSON.parse(message.message);
+                    expect(data).to.equal("__pong__");
+                    done();
+                });
+            }
+        });
     });
-    });
+    // TELEMETRY START
+    it("should confirm Websockets connection", function (done) {
+        testws_ping_pong.on("connect", function (conn6) {
+            if (conn6.connected) {
+                telemetry_connection = conn6;
+                telemetry_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
+                    done();
+                });
+            }
+        });
+        telemetry_connection.connect("ws://localhost:3000/monitor");
 
+        it("should confirm telemetry feed connection", function (done) {
+            if (telemetry_connection.connected) {
+                telemetry_connection.once("message", function (message) {
+                    expect(typeof(message.data)).to.equal("string");
+                    expect(message === 'Waiting for changes in telemetry ... ');
+                    done();
+                });
+                telemetry_connection.send("telemetry");
+            }
+        });
+
+        it("should push a ping-pong notification to client", function (done) {
+            if (ping_pong_connection.connected) {
+                ping_pong_connection.once("message", function (message) {
+                    expect(typeof(JSON.parse(message.data))).to.equal("string");
+                    data = JSON.parse(message.message);
+                    expect(data.Location).to.equal("Anywhere");
+                    expect(data.Optional.Specific.K1).to.equal("V1");
+                    done();
+                });
+                rdb.db("Brain").table("Targets").insert({"Location":"Anywhere", "Optional":{"Specific":{"K1":"V1"}}})
+                    .run(rdbconn, function (err, result) {
+                        if (err) throw err;
+                    });
+            }
+        });
+    });
+    // TELEMETRY END
 });
 
