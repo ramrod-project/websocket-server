@@ -220,7 +220,7 @@ describe("", function () {
             }
         });
         testws_files.connect("ws://localhost:3000/monitor");
-
+    });
     it("should confirm files feed connection", function (done) {
         if (files_connection.connected) {
             files_connection.once("message", function (message) {
@@ -245,7 +245,6 @@ describe("", function () {
             if (err) throw err;
         });
     });
-    });
 
     // PLUGINS START
     it("should confirm Websockets connection", function (done) {
@@ -260,7 +259,7 @@ describe("", function () {
             }
         });
         testws_plugins.connect("ws://localhost:3000/monitor");
-
+    });
     it("should confirm plugins feed connection", function (done) {
         if (plugs_connection.connected) {
             plugs_connection.once("message", function (message) {
@@ -285,7 +284,6 @@ describe("", function () {
             if (err) throw err;
         });
     });
-    });
 
     // PING-PONG START
     it("should confirm Websockets connection", function (done) {
@@ -301,27 +299,28 @@ describe("", function () {
         });
         testws_ping_pong.connect("ws://localhost:3000/monitor");
 
-        it("should confirm ping-pong feed connection", function (done) {
-            if (ping_pong_connection.connected) {
-                ping_pong_connection.once("message", function (message) {
-                    expect(typeof(message.data)).to.equal("string");
-                    expect(message === 'cheerio');
-                    done();
-                });
-                ping_pong_connection.send("__pong__");
-            }
-        });
+    });
+    it("should confirm ping-pong feed connection", function (done) {
+        if (ping_pong_connection.connected) {
+            ping_pong_connection.once("message", function (message) {
+                expect(typeof(message.utf8Data)).to.equal("string");
+                expect(message === 'cheerio');
+                done();
+            });
+            ping_pong_connection.send("__pong__");
+        }
+    });
 
-        it("should push a ping-pong notification to client", function (done) {
-            if (ping_pong_connection.connected) {
-                ping_pong_connection.once("message", function (message) {
-                    expect(typeof(JSON.parse(message.data))).to.equal("string");
-                    data = JSON.parse(message.message);
-                    expect(data).to.equal("__pong__");
-                    done();
-                });
-            }
-        });
+    it("should push a ping-pong notification to client", function (done) {
+        if (ping_pong_connection.connected) {
+            ping_pong_connection.once("message", function (message) {
+                expect(typeof(message.utf8Data)).to.equal("string");
+                data = message.utf8Data;
+                expect(data).to.equal("__pong__");
+                done();
+            });
+            ping_pong_connection.send("__ping__");
+        }
     });
     // TELEMETRY START
     it("should confirm Websockets connection", function (done) {
@@ -336,10 +335,13 @@ describe("", function () {
             }
         });
         testws_telemetry.connect("ws://localhost:3000/monitor");
+    });
+
     it("should confirm telemetry feed connection", function (done) {
         if (telemetry_connection.connected) {
             telemetry_connection.once("message", function (message) {
-                expect(typeof(message.data)).to.equal("string");
+
+                expect(typeof(message.utf8Data)).to.equal("string");
                 expect(message === 'Waiting for changes in telemetry ... ');
                 done();
             });
@@ -350,8 +352,7 @@ describe("", function () {
     it("should push the new telemetry to the client", function (done) {
         if (telemetry_connection.connected) {
             telemetry_connection.once("message", function (message) {
-                expect(typeof(JSON.parse(message.data))).to.equal("string");
-                data = JSON.parse(message.message);
+                data = JSON.parse(message.utf8Data);
                 expect(data.Location).to.equal("Anywhere");
                 expect(data.Optional.Specific.K1).to.equal("V1");
                 done();
@@ -361,7 +362,6 @@ describe("", function () {
                     if (err) throw err;
                 });
         }
-    });
     });
 
     // TELEMETRY END

@@ -203,7 +203,7 @@ wss.on("connection", function (ws) {
                             if ( ("old_val" in row ) &&
                                  ("new_val" in row && row.new_val !== null) &&
                                  (ws.readyState == 1) ){
-                                    ws.send(JSON.stringify(row.new_val, null, 2));
+                                    ws.send(JSON.stringify(row.new_val));
                             } else {
                                 return null;
                             }
