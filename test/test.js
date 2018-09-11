@@ -357,6 +357,10 @@ describe("", function () {
                 expect(data.Optional.Specific.K1).to.equal("V1");
                 done();
             });
+            rdb.db("Brain").table("Targets")
+                .run(rdbconn, function (err, result) {
+                    if (err) throw err;
+                });
             rdb.db("Brain").table("Targets").insert({"Location":"Anywhere", "Optional":{"Specific":{"K1":"V1"}}})
                 .run(rdbconn, function (err, result) {
                     if (err) throw err;

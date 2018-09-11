@@ -45,6 +45,7 @@ reconnect()
 var connection = null;
 var connection_files = null;
 var connection_plugin = null;
+var connection_telem = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection = conn;
@@ -56,6 +57,10 @@ rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection_plugin = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_telem = conn;
 });
 // Create websocket server using http server
 var wss = new WebSocket.Server({ server: server, path: "/monitor" });
@@ -162,7 +167,7 @@ wss.on("connection", function (ws) {
                             //console.warn(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
-                                    ws.send(JSON.stringify(sendData, null, 2));
+                                    ws.send(JSON.stringify(sendData));
                             } else {
                                 return null;
                             }
@@ -195,7 +200,7 @@ wss.on("connection", function (ws) {
                 ws.send("Waiting for changes in telemetry ... ");
                 rdb.db("Brain").table("Targets")
                     .changes({squash: false})
-                    .run(connection_files, function (err, cursor) {
+                    .run(connection_telem, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
