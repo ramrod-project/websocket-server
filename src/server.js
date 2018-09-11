@@ -42,13 +42,18 @@ function reconnect() {
 }
 reconnect()
 .then(conn => connection = conn);*/
-var connection = null;
+var connection_status = null;
+var connection_output = null;
 var connection_files = null;
 var connection_plugin = null;
 var connection_telem = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
-    connection = conn;
+    connection_status = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_output = conn;
 });
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
@@ -99,12 +104,12 @@ wss.on("connection", function (ws) {
         switch (message) {
         // Handle job status monitoring
         case "status":
-            if (connection.open) {
+            if (connection_status.open) {
                 ws.send("Waiting for changes in job statuses...");
                 rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Waiting"))
                     .changes({includeInitial: true,
                               squash: false})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_status, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
@@ -135,11 +140,11 @@ wss.on("connection", function (ws) {
             break;
         // Handle job output monitoring
         case "output":
-            if (connection.open) {
+            if (connection_output.open) {
                 ws.send("Waiting for changes in job outputs...");
                 rdb.db("Brain").table("Outputs")
                     .changes({includeInitial: true})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_output, function (err, cursor) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
@@ -156,7 +161,7 @@ wss.on("connection", function (ws) {
             }
             break;
         case "files":
-            if (connection.open) {
+            if (connection_files.open) {
                 ws.send("Waiting for changes in files ... ");
                 rdb.db("Brain").table("Files")
                     .changes({squash: false})
@@ -164,7 +169,7 @@ wss.on("connection", function (ws) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            //console.warn(row);
+                            console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData));
@@ -176,7 +181,7 @@ wss.on("connection", function (ws) {
             }
             break;
         case "plugins":
-            if (connection.open) {
+            if (connection_plugin.open) {
                 ws.send("Waiting for changes in Plugins ... ");
                 rdb.db("Controller").table("Plugins")
                     .changes({squash: false})
@@ -184,7 +189,7 @@ wss.on("connection", function (ws) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            //console.warn(row);
+                            console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData, null, 2));
@@ -196,7 +201,7 @@ wss.on("connection", function (ws) {
             }
             break;
         case "telemetry":
-            if (connection.open) {
+            if (connection_telem.open) {
                 ws.send("Waiting for changes in telemetry ... ");
                 rdb.db("Brain").table("Targets")
                     .changes({squash: false})
@@ -204,7 +209,7 @@ wss.on("connection", function (ws) {
                         if (err) throw err;
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            //console.warn(row);
+                            console.log(row);
                             if ( ("old_val" in row ) &&
                                  ("new_val" in row && row.new_val !== null) &&
                                  (ws.readyState == 1) ){
@@ -217,7 +222,7 @@ wss.on("connection", function (ws) {
             }
             break;
         case "__ping__":
-            if (connection.open) {
+            if (ws.readyState == 1)  {
                 if (message === '__ping__') {
                     // console.log("message is ping");
                     ws.send('__pong__');
