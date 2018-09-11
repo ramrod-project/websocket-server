@@ -75,19 +75,7 @@ describe("", function () {
     });
 
     after(function(done) {
-        status_connection.close();
-        output_connection.close();
-        files_connection.close();
-        plugs_connection.close();
-        ping_pong_connection.close();
-        telemetry_connection.close();
-        rdb.db("Brain").table("Jobs").delete().run(rdbconn, function (err, result) {
-            if (err) done(err);
-            rdb.db("Brain").table("Outputs").delete().run(rdbconn, function (err, result) {
-                if (err) done(err);
-                done();
-            });
-        });
+        done();
     });
 
     it("should confirm Websockets connection", function (done) {
@@ -201,6 +189,10 @@ describe("", function () {
                 done();
             });
         }
+        rdb.db("Brain").table("Outputs").wait()
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
         rdb.db("Brain").table("Outputs").insert(newOutput)
         .run(rdbconn, function (err, result) {
             if (err) throw err;
@@ -225,6 +217,7 @@ describe("", function () {
         if (files_connection.connected) {
             files_connection.once("message", function (message) {
                 expect(typeof(message.utf8Data)).to.equal("string");
+                console.warn(message);
                 done();
             });
             files_connection.send("files");
@@ -240,7 +233,15 @@ describe("", function () {
                 done();
             });
         }
+        rdb.db("Brain").table("Files").wait({waitFor: 'ready_for_writes'})
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
         rdb.db("Brain").table("Files").insert({"Name":"t3st"})
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
+        rdb.db("Brain").table("Files").insert({"Name":"another"})
         .run(rdbconn, function (err, result) {
             if (err) throw err;
         });
@@ -263,6 +264,7 @@ describe("", function () {
     it("should confirm plugins feed connection", function (done) {
         if (plugs_connection.connected) {
             plugs_connection.once("message", function (message) {
+                console.warn(message);
                 expect(typeof(message.utf8Data)).to.equal("string");
                 done();
             });
@@ -273,6 +275,7 @@ describe("", function () {
     it("should push a plugins notification to client", function (done) {
         if (plugs_connection.connected) {
             plugs_connection.once("message", function (message) {
+                console.warn(message);
                 expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
                 data = JSON.parse(message.utf8Data);
                 expect(data.changed).to.equal(1);
@@ -340,7 +343,7 @@ describe("", function () {
     it("should confirm telemetry feed connection", function (done) {
         if (telemetry_connection.connected) {
             telemetry_connection.once("message", function (message) {
-
+                console.warn(message);
                 expect(typeof(message.utf8Data)).to.equal("string");
                 expect(message === 'Waiting for changes in telemetry ... ');
                 done();
@@ -357,10 +360,10 @@ describe("", function () {
                 expect(data.Optional.Specific.K1).to.equal("V1");
                 done();
             });
-            rdb.db("Brain").table("Targets")
-                .run(rdbconn, function (err, result) {
-                    if (err) throw err;
-                });
+            rdb.db("Brain").table("Targets").wait({waitFor: 'ready_for_writes'})
+            .run(rdbconn, function (err, result) {
+                if (err) throw err;
+            });
             rdb.db("Brain").table("Targets").insert({"Location":"Anywhere", "Optional":{"Specific":{"K1":"V1"}}})
                 .run(rdbconn, function (err, result) {
                     if (err) throw err;
