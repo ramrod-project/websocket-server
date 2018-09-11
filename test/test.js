@@ -325,7 +325,7 @@ describe("", function () {
     });
     // TELEMETRY START
     it("should confirm Websockets connection", function (done) {
-        telemetry_connection.on("connect", function (conn6) {
+        testws_telemetry.on("connect", function (conn6) {
             if (conn6.connected) {
                 telemetry_connection = conn6;
                 telemetry_connection.once("message", function (message) {
@@ -335,7 +335,7 @@ describe("", function () {
                 });
             }
         });
-        telemetry_connection.connect("ws://localhost:3000/monitor");
+        testws_telemetry.connect("ws://localhost:3000/monitor");
     });
     it("should confirm telemetry feed connection", function (done) {
         if (telemetry_connection.connected) {
