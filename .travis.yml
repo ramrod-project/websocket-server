@@ -29,7 +29,8 @@ before_install:
     else export TAG=$TRAVIS_BRANCH; fi
 
 install:
-  - docker build -t ramrodpcp/websocket-server:test .
+  - sudo apt-get -y install python3-pip python-dev
+  - sudo pip3 install virtualenv
   - npm i -g npm@6.1.0
   - npm i
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -44,15 +45,13 @@ before_script:
   - sleep 3
   - npm test
   - ./cc-test-reporter after-build -t lcov --exit-code 0
+  - docker stop rethinkdb
 
 script:
-  - docker run -d --name websocket -p 3000:3000 -e "STAGE=QA" -e "LOGLEVEL=DEBUG"
-    --name websocket --network test ramrodpcp/websocket-server:test;
-  - sleep 5
-  - docker logs websocket
-  - docker stop websocket
-  - docker stop rethinkdb
+  - docker build -t ramrodpcp/websocket-server:test .
   # e2e tests
+  - virtualenv venv --python=/usr/bin/python3
+  - source venv/bin/activate
   - bash <(curl -s https://raw.githubusercontent.com/ramrod-project/integration-stack/$TRAVIS_BRANCH/scripts/e2e.sh)
 
 after_success:
