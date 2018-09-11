@@ -105,12 +105,12 @@ wss.on("connection", function (ws) {
         // Handle job status monitoring
         case "status":
             if (connection_status.open) {
-                ws.send("Waiting for changes in job statuses...");
                 rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Waiting"))
                     .changes({includeInitial: true,
                               squash: false})
                     .run(connection_status, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in job statuses...");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             //console.warn(row);
@@ -139,11 +139,11 @@ wss.on("connection", function (ws) {
         // Handle job output monitoring
         case "output":
             if (connection_output.open) {
-                ws.send("Waiting for changes in job outputs...");
                 rdb.db("Brain").table("Outputs")
                     .changes({includeInitial: true})
                     .run(connection_output, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in job outputs...");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             if ("old_val" in row && (!(row.old_val === null) || (row.new_val === null))) {
@@ -160,11 +160,11 @@ wss.on("connection", function (ws) {
             break;
         case "files":
             if (connection_files.open) {
-                ws.send("Waiting for changes in files ... ");
                 rdb.db("Brain").table("Files")
                     .changes({squash: false})
                     .run(connection_files, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in files ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             console.log(row);
@@ -178,11 +178,11 @@ wss.on("connection", function (ws) {
             break;
         case "plugins":
             if (connection_plugin.open) {
-                ws.send("Waiting for changes in Plugins ... ");
                 rdb.db("Controller").table("Plugins")
-                    .changes({squash: false})
+                    .changes({squash: false, includeStates: true})
                     .run(connection_plugin, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in Plugins ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             console.log(row);
@@ -196,11 +196,11 @@ wss.on("connection", function (ws) {
             break;
         case "telemetry":
             if (connection_telem.open) {
-                ws.send("Waiting for changes in telemetry ... ");
                 rdb.db("Brain").table("Targets")
                     .changes({squash: false, includeStates: true})
                     .run(connection_telem, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in telemetry ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             console.log(row);
