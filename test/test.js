@@ -325,7 +325,7 @@ describe("", function () {
     });
     // TELEMETRY START
     it("should confirm Websockets connection", function (done) {
-        testws_ping_pong.on("connect", function (conn6) {
+        telemetry_connection.on("connect", function (conn6) {
             if (conn6.connected) {
                 telemetry_connection = conn6;
                 telemetry_connection.once("message", function (message) {
@@ -336,33 +336,32 @@ describe("", function () {
             }
         });
         telemetry_connection.connect("ws://localhost:3000/monitor");
+    });
+    it("should confirm telemetry feed connection", function (done) {
+        if (telemetry_connection.connected) {
+            telemetry_connection.once("message", function (message) {
+                expect(typeof(message.data)).to.equal("string");
+                expect(message === 'Waiting for changes in telemetry ... ');
+                done();
+            });
+            telemetry_connection.send("telemetry");
+        }
+    });
 
-        it("should confirm telemetry feed connection", function (done) {
-            if (telemetry_connection.connected) {
-                telemetry_connection.once("message", function (message) {
-                    expect(typeof(message.data)).to.equal("string");
-                    expect(message === 'Waiting for changes in telemetry ... ');
-                    done();
+    it("should push a ping-pong notification to client", function (done) {
+        if (telemetry_connection.connected) {
+            telemetry_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.data))).to.equal("string");
+                data = JSON.parse(message.message);
+                expect(data.Location).to.equal("Anywhere");
+                expect(data.Optional.Specific.K1).to.equal("V1");
+                done();
+            });
+            rdb.db("Brain").table("Targets").insert({"Location":"Anywhere", "Optional":{"Specific":{"K1":"V1"}}})
+                .run(rdbconn, function (err, result) {
+                    if (err) throw err;
                 });
-                telemetry_connection.send("telemetry");
-            }
-        });
-
-        it("should push a ping-pong notification to client", function (done) {
-            if (telemetry_connection.connected) {
-                telemetry_connection.once("message", function (message) {
-                    expect(typeof(JSON.parse(message.data))).to.equal("string");
-                    data = JSON.parse(message.message);
-                    expect(data.Location).to.equal("Anywhere");
-                    expect(data.Optional.Specific.K1).to.equal("V1");
-                    done();
-                });
-                rdb.db("Brain").table("Targets").insert({"Location":"Anywhere", "Optional":{"Specific":{"K1":"V1"}}})
-                    .run(rdbconn, function (err, result) {
-                        if (err) throw err;
-                    });
-            }
-        });
+        }
     });
     // TELEMETRY END
 });
