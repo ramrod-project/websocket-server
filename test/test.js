@@ -349,8 +349,8 @@ describe("", function () {
         });
 
         it("should push a ping-pong notification to client", function (done) {
-            if (ping_pong_connection.connected) {
-                ping_pong_connection.once("message", function (message) {
+            if (telemetry_connection.connected) {
+                telemetry_connection.once("message", function (message) {
                     expect(typeof(JSON.parse(message.data))).to.equal("string");
                     data = JSON.parse(message.message);
                     expect(data.Location).to.equal("Anywhere");
