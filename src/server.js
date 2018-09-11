@@ -128,8 +128,6 @@ wss.on("connection", function (ws) {
                                  (ws.readyState == 1) ){
                                     var sendData = {"id":row.new_val.id, "status":row.new_val.Status};
                                     ws.send(JSON.stringify(sendData, null, 2));
-                            } else {
-                                return null;
                             }
                         });
                     });
