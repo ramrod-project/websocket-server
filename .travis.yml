@@ -4,10 +4,15 @@ env:
   global:
     - CC_TEST_REPORTER_ID=01ca84d88280ef32773ae13a7c40f6fa1f229bfe23c50cc381ea66810a7bbaa9
 
-language: node_js
+language:
+  - node_js
+  - python
 
 node_js:
   - "8.9.3"
+
+python:
+  - "3.6"
 
 services:
   - docker
@@ -24,7 +29,8 @@ before_install:
     else export TAG=$TRAVIS_BRANCH; fi
 
 install:
-  - docker build -t ramrodpcp/websocket-server:$TAG .
+  - sudo apt-get -y install python3-pip python-dev
+  - sudo pip3 install virtualenv
   - npm i -g npm@6.1.0
   - npm i
   - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
@@ -39,16 +45,17 @@ before_script:
   - sleep 3
   - npm test
   - ./cc-test-reporter after-build -t lcov --exit-code 0
-
-script:
-  - docker run -d --name websocket -p 3000:3000 -e "STAGE=QA" -e "LOGLEVEL=DEBUG"
-    --name websocket --network test ramrodpcp/websocket-server:$TAG;
-  - sleep 5
-  - docker logs websocket
-  - docker stop websocket
   - docker stop rethinkdb
 
+script:
+  - docker build -t ramrodpcp/websocket-server:test .
+  # e2e tests
+  - virtualenv venv --python=/usr/bin/python3
+  - source venv/bin/activate
+  - bash <(curl -s https://raw.githubusercontent.com/ramrod-project/integration-stack/$TRAVIS_BRANCH/scripts/e2e.sh)
+
 after_success:
+  - docker tag ramrodpcp/websocket-server:test ramrodpcp/websocket-server:$TAG
   - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];
     then echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin; fi
   - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]];

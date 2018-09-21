@@ -42,12 +42,18 @@ function reconnect() {
 }
 reconnect()
 .then(conn => connection = conn);*/
-var connection = null;
+var connection_status = null;
+var connection_output = null;
 var connection_files = null;
 var connection_plugin = null;
+var connection_telem = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
-    connection = conn;
+    connection_status = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_output = conn;
 });
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
@@ -56,6 +62,10 @@ rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection_plugin = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_telem = conn;
 });
 // Create websocket server using http server
 var wss = new WebSocket.Server({ server: server, path: "/monitor" });
@@ -94,13 +104,13 @@ wss.on("connection", function (ws) {
         switch (message) {
         // Handle job status monitoring
         case "status":
-            if (connection.open) {
-                ws.send("Waiting for changes in job statuses...");
+            if (connection_status.open) {
                 rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Waiting"))
                     .changes({includeInitial: true,
                               squash: false})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_status, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in job statuses...");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             //console.warn(row);
@@ -118,8 +128,6 @@ wss.on("connection", function (ws) {
                                  (ws.readyState == 1) ){
                                     var sendData = {"id":row.new_val.id, "status":row.new_val.Status};
                                     ws.send(JSON.stringify(sendData, null, 2));
-                            } else {
-                                return null;
                             }
                         });
                     });
@@ -130,12 +138,12 @@ wss.on("connection", function (ws) {
             break;
         // Handle job output monitoring
         case "output":
-            if (connection.open) {
-                ws.send("Waiting for changes in job outputs...");
+            if (connection_output.open) {
                 rdb.db("Brain").table("Outputs")
                     .changes({includeInitial: true})
-                    .run(connection, function (err, cursor) {
+                    .run(connection_output, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in job outputs...");
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             if ("old_val" in row && (!(row.old_val === null) || (row.new_val === null))) {
@@ -151,47 +159,62 @@ wss.on("connection", function (ws) {
             }
             break;
         case "files":
-            if (connection.open) {
-                ws.send("Waiting for changes in files ... ");
+            if (connection_files.open) {
                 rdb.db("Brain").table("Files")
                     .changes({squash: false})
                     .run(connection_files, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in files ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            //console.warn(row);
+                            console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
-                                    ws.send(JSON.stringify(sendData, null, 2));
-                            } else {
-                                return null;
+                                    ws.send(JSON.stringify(sendData));
                             }
                         });
                     });
             }
             break;
-            case "plugins":
-            if (connection.open) {
-                ws.send("Waiting for changes in Plugins ... ");
+        case "plugins":
+            if (connection_plugin.open) {
                 rdb.db("Controller").table("Plugins")
-                    .changes({squash: false})
+                    .changes({squash: false, includeStates: true})
                     .run(connection_plugin, function (err, cursor) {
                         if (err) throw err;
+                        ws.send("Waiting for changes in Plugins ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            //console.warn(row);
+                            console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData, null, 2));
-                            } else {
-                                return null;
                             }
                         });
                     });
             }
             break;
-            case "__ping__":
-            if (connection.open) {
+        case "telemetry":
+            if (connection_telem.open) {
+                rdb.db("Brain").table("Targets")
+                    .changes({squash: false, includeStates: true})
+                    .run(connection_telem, function (err, cursor) {
+                        if (err) throw err;
+                        ws.send("Waiting for changes in telemetry ... ");
+                        cursor.each(function (err, row) {
+                            if (err) throw err;
+                            console.log(row);
+                            if ( ("old_val" in row ) &&
+                                 ("new_val" in row && row.new_val !== null) &&
+                                 (ws.readyState == 1) ){
+                                    ws.send(JSON.stringify(row.new_val));
+                            }
+                        });
+                    });
+            }
+            break;
+        case "__ping__":
+            if (ws.readyState == 1)  {
                 if (message === '__ping__') {
                     // console.log("message is ping");
                     ws.send('__pong__');
