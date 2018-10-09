@@ -31,7 +31,7 @@ if (process.env.STAGE === "TESTING") {
 /*var connection = null;
 function reconnect() {
     return new Promise((resolve, reject) => {
-        setTimeout(() => rdb.connect( 
+        setTimeout(() => rdb.connect(
             {host: rethinkHost, port: rethinkPort},
             function(err, returnedConnection) {
                 if (err) throw err;
@@ -47,6 +47,7 @@ var connection_output = null;
 var connection_files = null;
 var connection_plugin = null;
 var connection_telem = null;
+var connection_logs = null;
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection_status = conn;
@@ -66,6 +67,11 @@ rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
 rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
     if (err) throw err;
     connection_telem = conn;
+});
+rdb.connect( {host: rethinkHost, port: rethinkPort}, function(err, conn) {
+    if (err) throw err;
+    connection_logs = conn;
+    // console.log(connection_logs);
 });
 // Create websocket server using http server
 var wss = new WebSocket.Server({ server: server, path: "/monitor" });
@@ -221,6 +227,26 @@ wss.on("connection", function (ws) {
                 } else {
                     console.log("message is NOT ping");
                 }
+            }
+            break;
+        case "logs":
+            if(connection_logs.open){
+                console.log("connection_logs are OPEN");
+                rdb.db("Brain").table("Logs")
+                    .changes({squash: false})
+                    .run(connection_logs, function(err, cursor){
+                        if (err) throw err;
+                        ws.send("Waiting for changes in logs ... ");
+                        cursor.each(function(err, row){
+                            if (err) throw err;
+                            console.log(row);
+                            if(("old_val" in row) &&
+                                ("new_val" in row && row.new_val !== null) &&
+                                (ws.readyState === 1)){
+                                ws.send(JSON.stringify(row.new_val));
+                            }
+                        });
+                    });
             }
             break;
         default:

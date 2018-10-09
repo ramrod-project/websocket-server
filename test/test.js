@@ -14,6 +14,7 @@ var output_connection = null;
 var files_connection = null;
 var plugs_connection = null;
 var telemetry_connection = null;
+var logs_connection = null;
 var ping_pong_connection = null;
 var rdbconn = null;
 var testws = null;
@@ -56,6 +57,14 @@ describe("", function () {
         },
         "Content": "Test output content"
     };
+    const newLog = {
+        "rt": 1538143122187,
+        "Severity": 1,
+        "msg": "Random msg #34",
+        "msgDoc": {"a":"Random msgDoc #34"},
+        "shost": "host 6",
+        "sourceServiceName": "Harness-5000"
+    };
 
     before(function (done) {
         testws = new wsclient();
@@ -64,6 +73,7 @@ describe("", function () {
         testws_plugins = new wsclient();
         testws_ping_pong = new wsclient();
         testws_telemetry = new wsclient();
+        testws_logs = new wsclient();
         rdb.connect( {host: "localhost", port: 28015}, function(err, conn) {
             if (err) throw err;
             rdbconn = conn;
@@ -372,5 +382,52 @@ describe("", function () {
     });
 
     // TELEMETRY END
+    // LOGS Start
+    it("should confirm Websockets connection", function (done) {
+        testws_logs.on("connect", function (conn7) {
+            if (conn7.connected) {
+                logs_connection = conn7;
+                logs_connection.once("message", function (message) {
+                    expect(typeof(message.utf8Data)).to.equal("string");
+                    expect(message.utf8Data).equal("Websocket connection established. Awaiting feed selection...");
+                    done();
+                });
+            }
+        });
+        testws_logs.connect("ws://localhost:3000/monitor");
+    });
+
+    it("should confirm logs feed connection", function (done) {
+        if (logs_connection.connected) {
+            logs_connection.once("message", function (message) {
+                console.warn(message);
+                expect(typeof(message.utf8Data)).to.equal("string");
+                expect(message === 'Waiting for changes in logs ... ');
+                done();
+            });
+            logs_connection.send("logs");
+        }
+    });
+
+    it("should push the new logs to client", function (done) {
+        if (logs_connection.connected) {
+            logs_connection.once("message", function (message) {
+                expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
+                expect(typeof(JSON.parse(message.utf8Data)) === "object");
+                data = JSON.parse(message.utf8Data);
+                expect(data.content !== null);
+                expect(data.rt).to.equal(newLog.rt);
+                done();
+            });
+        }
+        rdb.db("Brain").table("Logs").wait()
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
+        rdb.db("Brain").table("Logs").insert(newLog)
+        .run(rdbconn, function (err, result) {
+            if (err) throw err;
+        });
+    });
 });
 
