@@ -173,7 +173,7 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in files ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
+                            //console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData));
@@ -191,7 +191,7 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in Plugins ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
+                            //console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData, null, 2));
@@ -209,7 +209,7 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in telemetry ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
+                            //console.log(row);
                             if ( ("old_val" in row ) &&
                                  ("new_val" in row && row.new_val !== null) &&
                                  (ws.readyState == 1) ){
@@ -239,7 +239,9 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in logs ... ");
                         cursor.each(function(err, row){
                             if (err) throw err;
-                            console.log(row);
+                            // warning: printing anything in this loop
+                            //          results in infinite logging loop
+                            // console.log(row);
                             if(("old_val" in row) &&
                                 ("new_val" in row && row.new_val !== null) &&
                                 (ws.readyState === 1)){
