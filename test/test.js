@@ -130,13 +130,26 @@ describe("", function () {
             status_connection.once("message", function (message) {
                 expect(typeof(JSON.parse(message.utf8Data))).to.equal("object");
                 data = JSON.parse(message.utf8Data);
-                expect(data.status).to.equal("Done");
+                expect(data[0].status).to.equal("Ready");
                 done();
             });
         }
         rdb.db("Brain").table("Jobs").insert(newJob)
         .run(rdbconn, function (err, result) {
             if (err) throw err;
+            rdb.db("Brain").table("Jobs").wait()
+            .run(rdbconn, function (err, result) {
+               if (err) throw err;
+            });
+            rdb.db("Brain").table("Jobs").get("t3stid")
+            .update({"Status": "Ready"})
+            .run(rdbconn, function (err, result) {
+                if (err) throw err;
+            });
+            rdb.db("Brain").table("Jobs").wait()
+            .run(rdbconn, function (err, result) {
+               if (err) throw err;
+            });
             rdb.db("Brain").table("Jobs").get("t3stid")
             .update({"Status": "Done"})
             .run(rdbconn, function (err, result) {
