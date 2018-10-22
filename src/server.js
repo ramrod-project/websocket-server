@@ -87,7 +87,7 @@ function heartbeat () {
 }
 
 function status_dumper(ws, changes){
-    if (ws.readyState == 1){
+    if (ws.readyState === 1){
         var sending = [];
         while(changes.length > 0) {
             sending.push(changes.shift());
