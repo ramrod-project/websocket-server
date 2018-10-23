@@ -195,7 +195,7 @@ wss.on("connection", function (ws) {
                         cursor.each(function (err, row) {
                             if (err) throw err;
                             //console.log(row);
-                            if (ws.readyState == 1) {
+                            if (ws.readyState === 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData));
                             }
