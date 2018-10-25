@@ -86,6 +86,15 @@ function heartbeat () {
     this.isAlive = true;
 }
 
+function status_dumper(ws, changes){
+    if (ws.readyState === 1){
+        var sending = [];
+        while(changes.length > 0) {
+            sending.push(changes.shift());
+        }
+        ws.send(JSON.stringify(sending, null, 2));
+    }
+}
 // Define Websockets listener callbacks for
 // handling incoming connections
 wss.on("connection", function (ws) {
@@ -111,6 +120,10 @@ wss.on("connection", function (ws) {
         // Handle job status monitoring
         case "status":
             if (connection_status.open) {
+                var bulk_changes = [];
+                var last_send_time = new Date("12/31/1999");  // Party like it's
+                var max_throttle_msecs = 1000; // 1 sec
+                var auto_dumper = setTimeout(status_dumper, max_throttle_msecs, ws, bulk_changes);
                 rdb.db("Brain").table("Jobs").filter(rdb.row("Status").ne("Waiting"))
                     .changes({includeInitial: true,
                               squash: false})
@@ -131,9 +144,17 @@ wss.on("connection", function (ws) {
                                       (row.old_val.Status != row.new_val.Status)
                                    )
                                  ) &&
-                                 (ws.readyState == 1) ){
-                                    var sendData = {"id":row.new_val.id, "status":row.new_val.Status};
-                                    ws.send(JSON.stringify(sendData, null, 2));
+                                 (ws.readyState == 1) ) {
+                                    var sendData = {"id": row.new_val.id, "status": row.new_val.Status};
+                                    bulk_changes.push(sendData);
+                                    var now_time = new Date();
+                                    clearTimeout(auto_dumper);
+                                    if (now_time.getTime() > last_send_time.getTime() + max_throttle_msecs) {
+                                        status_dumper(ws, bulk_changes);
+                                        last_send_time = new Date();
+                                    } else {
+                                        auto_dumper = setTimeout(status_dumper, max_throttle_msecs, ws, bulk_changes);
+                                    }
                             }
                         });
                     });
@@ -173,8 +194,8 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in files ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
-                            if (ws.readyState == 1) {
+                            //console.log(row);
+                            if (ws.readyState === 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData));
                             }
@@ -191,7 +212,7 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in Plugins ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
+                            //console.log(row);
                             if (ws.readyState == 1) {
                                     var sendData = {"changed":1};
                                     ws.send(JSON.stringify(sendData, null, 2));
@@ -209,7 +230,7 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in telemetry ... ");
                         cursor.each(function (err, row) {
                             if (err) throw err;
-                            console.log(row);
+                            //console.log(row);
                             if ( ("old_val" in row ) &&
                                  ("new_val" in row && row.new_val !== null) &&
                                  (ws.readyState == 1) ){
@@ -239,7 +260,9 @@ wss.on("connection", function (ws) {
                         ws.send("Waiting for changes in logs ... ");
                         cursor.each(function(err, row){
                             if (err) throw err;
-                            console.log(row);
+                            // warning: printing anything in this loop
+                            //          results in infinite logging loop
+                            // console.log(row);
                             if(("old_val" in row) &&
                                 ("new_val" in row && row.new_val !== null) &&
                                 (ws.readyState === 1)){
